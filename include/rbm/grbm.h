@@ -166,7 +166,29 @@ namespace rbm
       train_epoch(const std::vector<VisVType> &train_data);
       VisVType
       reconstruct(VisVType &v);
+    
+       
+      GRBM &
+      setVisibleBinary()
+      {
+        isVisibleBinary = true;
+        return *this;
+      }
+      
+      GRBM &
+      setBatchSize(int bsize)
+      {
+        minibatchSize = bsize;
+      }
 
+      GRBM &
+      setLearningRate(g_float lrate)
+      {  // set all learning rates
+        epsW = lrate;
+        epsVisBias = epsW * 10.;
+        epsHidBias = epsW * 10.;
+      }
+      
       /*
        MatrixType &
        getWeights()

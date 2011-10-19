@@ -145,7 +145,8 @@ namespace rbm
         }
       weightsInc.array() = weightsInc.array() * momentum + cd_weights_tmp.array() * (epsW
           / numCases);
-      std::cout << "Pos CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
+      //DEBUG:
+      //std::cout << "Pos CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
       // TODO: Sparsity constraints
     }
 
@@ -165,14 +166,20 @@ namespace rbm
           visStdevsNeg.setZero();
         }
       
-      std::cout << "data_size: " << data.size() << std::endl;
+      //std::cout << "data_size: " << data.size() << std::endl;
       for (int i = 0; i < data.size(); ++i)
         {
           const std::pair<VisVType, HidVType> &curr = data[i];
           //cd_weights_tmp = visible * hiddenact.transpose();
           cd_weights_tmp += curr.first * curr.second.transpose();
+          
+          //DEBUG:
+          /*
+          std::cout << "curr.first" << std::endl 
+                    << curr.first.transpose() << std::endl;
           std::cout << "cd_weights_tmp" << std::endl
                     << cd_weights_tmp << std::endl << std::endl;
+          */
           visibleNeg += curr.first;
           hiddenNeg += curr.second;
 
@@ -193,7 +200,8 @@ namespace rbm
             }
         }
       weightsInc.array() += cd_weights_tmp.array() * (-epsW / numCases);
-      std::cout << "NEG CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
+      //DEBUG:
+      //std::cout << "NEG CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
     }
 
   template<int VIS_DIM, int HID_DIM>
@@ -274,10 +282,11 @@ namespace rbm
               for (int c = 0; c < numCD; c++)
                 {
                   computeVisibleProb();
-                  computeHiddenProb(currentVis);
+                  computeHiddenProb(visibleProb);
+                  //computeHiddenProb(currentVis);
                 }
               // enqueue to negative examples
-              cd_data_neg.push_back(make_pair(currentVis, hiddenProb));
+              cd_data_neg.push_back(make_pair(visibleProb, hiddenProb));
             }
 
           // compute cd correlations & gradients for positive and negative phase
