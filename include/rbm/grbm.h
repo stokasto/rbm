@@ -80,7 +80,7 @@ namespace rbm
         // set all learning rates
         epsW = eps_weights;
         epsVisBias = epsW * 10.;
-        epsHidsBias = epsW * 10.;
+        epsHidBias = epsW * 10.;
         epsStdevs = eps_stdev;
 
         momentum = mom;
@@ -155,17 +155,17 @@ namespace rbm
       }
 
       virtual
-      ~RBM()
+      ~GRBM()
       {
       }
 
       /* public methods */
       void
-      train(std::vector<VisVType> &train_data, int num_epoch);
+      train(const std::vector<VisVType> &train_data, int num_epoch);
       void
-      train_epoch(std::vector<VisVType> &train_data);
+      train_epoch(const std::vector<VisVType> &train_data);
       VisVType
-      reconstruct_from_vector(VisVType &v);
+      reconstruct(VisVType &v);
 
       /*
        MatrixType &

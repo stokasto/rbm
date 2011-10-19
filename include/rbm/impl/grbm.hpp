@@ -1,4 +1,5 @@
 #include <rbm/grbm.h>
+#include <rbm/tools.h>
 
 #include <math.h>
 #include <stdlib.h>
@@ -30,7 +31,8 @@ namespace rbm
         }
       hiddenProb += hiddenbias;
       // apply logistic activation
-      hiddenProb.array() = 1 / (1 + exp(-hiddenProb.array()));
+      for (int i = 0; i < hiddenProb.size(); ++i)
+        hiddenProb(i) = 1. / (1 + exp(-hiddenProb(i)));
     }
 
   template<int VIS_DIM, int HID_DIM>
@@ -55,24 +57,37 @@ namespace rbm
 
           if (addGaussianNoise)
             {
-              // TODO add some gaussian noise to the visible units here
+              // add some gaussian noise to the visible units here
+              g_float gn1, gn2;
+              int i = 0;
+              for (; i + 1 < visibleProb.size(); i += 2)
+                {
+                  sampleTwoGaussian(gn1, gn2);
+                  visibleProb(i) += gn1;
+                  visibleProb(i+1) += gn2;
+                }
+              for (; i < visibleProb.size(); ++i)
+                {
+                  sampleTwoGaussian(gn1, gn2);
+                  visibleProb(i) += gn1;
+                }
             }
           visibleProb.array() = visibleProb.array() * visStdevs.array();
         }
       else
         {
-          if (!isVisbleBinary && addGaussianNoise)
+          if (!isVisibleBinary && addGaussianNoise)
             {
-              sampleGaussian( visibleProb);
+              sampleGaussianMat<VisVType>( visibleProb);
               // scale sampled matrix
-              //visibleProb *= (1. / visStdev);
-              visbleProb.array() += (visibleProb.array() / visStdev)
+              //visibleProb *= (1. / visStdev); // << done in next row
+              visibleProb.array() += (visibleProb.array() / visStdev)
                   + (weights * hiddenProb).array() / visStdev;
             }
           else
             {
               visibleProb = weights * hiddenProb;
-              if (!isVisbleBinary)
+              if (!isVisibleBinary)
                 visibleProb *= (1. / visStdev);
             }
         }
@@ -81,9 +96,10 @@ namespace rbm
       visibleProb += visiblebias;
 
       // if visible should be binary threshold via logistic activation
-      if (isVisbleBinary)
+      if (isVisibleBinary)
         {
-          visibleProb.array() = 1 / (1 + exp(-visibleProb.array()));
+          for (int i = 0; i < visibleProb.size(); ++i)
+            visibleProb(i) = 1. / (1 + exp(-visibleProb(i)));
         }
     }
 
@@ -92,10 +108,12 @@ namespace rbm
     GRBM<VIS_DIM, HID_DIM>::computeCDPositive(
         const std::vector<std::pair<VisVType, HidVType> > &data)
     {
+      assert(data.size() > 0);
       bool computeStdevCD = (isVisStdevLearned && epsStdevs > 0. && !isVisibleBinary);
       numCases = data.size();
       visiblePos.setZero();
       hiddenPos.setZero();
+      cd_weights_tmp.setZero();
       if (computeStdevCD)
         { // if we want to learn the stdev we need to clear it first
           visStdevsPos.setZero();
@@ -115,7 +133,7 @@ namespace rbm
 
               // gradient can be computed as:
               // d(-F)/ds_i = ((v_i - b_i)^2 / s_i - v_i * sum_j {h_j * w_ij}) / s_i^2
-              visStdevsTmp1 = (weights.transpose() * curr.second);
+              visStdevsTmp1 = (weights * curr.second);
               visStdevsTmp1.array() = curr.first.array();
               visStdevsTmp2 = curr.first - visiblebias;
               visStdevsTmp2.array() = (visStdevsTmp2.array() * visStdevsTmp2.array())
@@ -125,8 +143,9 @@ namespace rbm
               visStdevsPos += visStdevsTmp2;
             }
         }
-      weightsInc.array() = weightsInc.array() * momentum + cd_weights_pos.array() * (epsW
+      weightsInc.array() = weightsInc.array() * momentum + cd_weights_tmp.array() * (epsW
           / numCases);
+      std::cout << "Pos CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
       // TODO: Sparsity constraints
     }
 
@@ -135,20 +154,25 @@ namespace rbm
     GRBM<VIS_DIM, HID_DIM>::computeCDNegative(
         const std::vector<std::pair<VisVType, HidVType> > &data)
     {
+      assert(data.size() > 0);
       bool computeStdevCD = (isVisStdevLearned && epsStdevs > 0. && !isVisibleBinary);
       numCases = data.size();
       visibleNeg.setZero();
       hiddenNeg.setZero();
+      cd_weights_tmp.setZero();
       if (computeStdevCD)
         { // if we want to learn the stdev we need to clear it first
           visStdevsNeg.setZero();
         }
-
+      
+      std::cout << "data_size: " << data.size() << std::endl;
       for (int i = 0; i < data.size(); ++i)
         {
           const std::pair<VisVType, HidVType> &curr = data[i];
           //cd_weights_tmp = visible * hiddenact.transpose();
           cd_weights_tmp += curr.first * curr.second.transpose();
+          std::cout << "cd_weights_tmp" << std::endl
+                    << cd_weights_tmp << std::endl << std::endl;
           visibleNeg += curr.first;
           hiddenNeg += curr.second;
 
@@ -158,7 +182,7 @@ namespace rbm
 
               // gradient can be computed as:
               // d(-F)/ds_i = ((v_i - b_i)^2 / s_i - v_i * sum_j {h_j * w_ij}) / s_i^2
-              visStdevsTmp1 = (weights.transpose() * curr.second);
+              visStdevsTmp1 = (weights * curr.second);
               visStdevsTmp1.array() = curr.first.array();
               visStdevsTmp2 = curr.first - visiblebias;
               visStdevsTmp2.array() = (visStdevsTmp2.array() * visStdevsTmp2.array())
@@ -168,7 +192,8 @@ namespace rbm
               visStdevsNeg += visStdevsTmp2;
             }
         }
-      weightsInc.array() += cd_weights_pos.array() * (-epsW / numCases);
+      weightsInc.array() += cd_weights_tmp.array() * (-epsW / numCases);
+      std::cout << "NEG CD weightsInc: " << std::endl << weightsInc << std::endl << std::endl;
     }
 
   template<int VIS_DIM, int HID_DIM>
@@ -193,24 +218,23 @@ namespace rbm
       if (isVisStdevLearned && epsStdevs > 0.)
         {
           // compute stddev update
-          visStdevsPos.array() = visStdevsPos.array() * (epsStdevs / numCases) + visStdevsNeg
-              * (epsStdevs / numCases);
+          visStdevsPos.array() = visStdevsPos.array() * (epsStdevs / numCases) + visStdevsNeg.array() * (epsStdevs / numCases);
           visStdevsInc = visStdevsInc * momentum + visStdevsPos;
 
           // and apply
-          visStdevs += visStdevInc;
+          visStdevs += visStdevsInc;
         }
     }
 
   template<int VIS_DIM, int HID_DIM>
     void
-    GRBM<VIS_DIM, HID_DIM>::train_epoch(std::vector<VisVType> &train_data, int num_epoch)
+    GRBM<VIS_DIM, HID_DIM>::train(const std::vector<VisVType> &train_data, int num_epoch)
     {
       int epoch = 1;
       while (epoch <= num_epoch)
         {
           std::cout << "Start training epoch: " << epoch << std::endl;
-          train(train_data);
+          train_epoch(train_data);
           std::cout << "Start testing after epoch: " << epoch << std::endl;
           ++epoch;
         }
@@ -218,9 +242,9 @@ namespace rbm
 
   template<int VIS_DIM, int HID_DIM>
     void
-    GRBM<VIS_DIM, HID_DIM>::train_epoch(std::vector<VisVType> &train_data)
+    GRBM<VIS_DIM, HID_DIM>::train_epoch(const std::vector<VisVType> &train_data)
     {
-      int numMinibatches = (data.size() + minibatchSize - 1) / minibatchSize;
+      int numMinibatches = (train_data.size() + minibatchSize - 1) / minibatchSize;
       double batchError = 0;
       VisVType currentVis = train_data[0];
       std::vector < std::pair<VisVType, HidVType> > cd_data_pos;
@@ -228,8 +252,8 @@ namespace rbm
       //cd_data.resize(minibatchSize);
       for (int b = 0; b < numMinibatches; b++)
         {
-          int miniStart = m * minibatchSize;
-          int miniEnd = std::min(data.size(), (b + 1) * minibatchSize);
+          int miniStart = b * minibatchSize;
+          int miniEnd = std::min(int(train_data.size()), (b + 1) * minibatchSize);
           for (int i = miniStart; i < miniEnd; ++i)
             {
               const VisVType &input = train_data[i];
@@ -237,7 +261,7 @@ namespace rbm
               // ***** POSITIVE PHASE *****
               computeHiddenProb(input);
               // enqueue to positive examples
-              cd_data_pos.push_back(make_pair(input, hiddenProbs));
+              cd_data_pos.push_back(make_pair(input, hiddenProb));
 
               // ***** NEGATIVE PHASE *****
               // PCD
@@ -253,7 +277,7 @@ namespace rbm
                   computeHiddenProb(currentVis);
                 }
               // enqueue to negative examples
-              cd_data_pos.push_back(make_pair(currentVis, hiddenProbs));
+              cd_data_neg.push_back(make_pair(currentVis, hiddenProb));
             }
 
           // compute cd correlations & gradients for positive and negative phase
@@ -275,17 +299,17 @@ namespace rbm
     }
 
   template<int VIS_DIM, int HID_DIM>
-    typename RBM<VIS_DIM, HID_DIM>::VisVType
+    typename GRBM<VIS_DIM, HID_DIM>::VisVType
     GRBM<VIS_DIM, HID_DIM>::reconstruct(VisVType &v)
     {
-      visibleProbs = v;
-      computeHiddenProb( visibleProbs);
+      visibleProb = v;
+      computeHiddenProb(visibleProb);
 
       for (int n = 0; n < std::max(1, numCD); n++)
         {
           computeVisibleProb();
           if (n < numCD - 1)
-            computeHiddenProb(visibleProbs);
+            computeHiddenProb(visibleProb);
         }
       return visibleProb;
     }

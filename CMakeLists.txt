@@ -17,6 +17,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 
 # ----- Testing -----
 add_executable(test_8_5_8 test/test_8_5.cpp)
+add_executable(test_8_5_8_grbm test/test_8_5_grbm.cpp)
 IF (GTEST_FOUND)
   ENABLE_TESTING()
   include_directories(${GTEST_INCLUDE_DIR})
