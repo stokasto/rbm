@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include <rbm/types.h>
 
@@ -105,9 +106,9 @@ namespace rbm
       void
       computeVisibleProb();
       void
-      computeCDPositive(const std::vector<std::pair<VisVType, HidVType> > &data);
+      computeCDPositive(const std::vector<std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > &data);
       void
-      computeCDNegative(const std::vector<std::pair<VisVType, HidVType> > &data);
+      computeCDNegative(const std::vector<std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > &data);
       void
       updateWeights();
 
@@ -161,9 +162,9 @@ namespace rbm
 
       /* public methods */
       void
-      train(const std::vector<VisVType> &train_data, int num_epoch);
+      train(const std::vector<VisVType, Eigen::aligned_allocator<VisVType> > &train_data, int num_epoch);
       void
-      train_epoch(const std::vector<VisVType> &train_data);
+      train_epoch(const std::vector<VisVType, Eigen::aligned_allocator<VisVType> > &train_data);
       VisVType
       reconstruct(VisVType &v);
     

@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <Eigen/StdVector>
+
 using namespace std;
 
 namespace rbm
@@ -106,7 +108,7 @@ namespace rbm
   template<int VIS_DIM, int HID_DIM>
     void
     GRBM<VIS_DIM, HID_DIM>::computeCDPositive(
-        const std::vector<std::pair<VisVType, HidVType> > &data)
+        const std::vector<std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > &data)
     {
       assert(data.size() > 0);
       bool computeStdevCD = (isVisStdevLearned && epsStdevs > 0. && !isVisibleBinary);
@@ -153,7 +155,7 @@ namespace rbm
   template<int VIS_DIM, int HID_DIM>
     void
     GRBM<VIS_DIM, HID_DIM>::computeCDNegative(
-        const std::vector<std::pair<VisVType, HidVType> > &data)
+        const std::vector<std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > &data)
     {
       assert(data.size() > 0);
       bool computeStdevCD = (isVisStdevLearned && epsStdevs > 0. && !isVisibleBinary);
@@ -236,7 +238,7 @@ namespace rbm
 
   template<int VIS_DIM, int HID_DIM>
     void
-    GRBM<VIS_DIM, HID_DIM>::train(const std::vector<VisVType> &train_data, int num_epoch)
+    GRBM<VIS_DIM, HID_DIM>::train(const std::vector<VisVType, Eigen::aligned_allocator<VisVType> > &train_data, int num_epoch)
     {
       int epoch = 1;
       while (epoch <= num_epoch)
@@ -250,13 +252,15 @@ namespace rbm
 
   template<int VIS_DIM, int HID_DIM>
     void
-    GRBM<VIS_DIM, HID_DIM>::train_epoch(const std::vector<VisVType> &train_data)
+    GRBM<VIS_DIM, HID_DIM>::train_epoch(const std::vector<VisVType, Eigen::aligned_allocator<VisVType> > &train_data)
     {
       int numMinibatches = (train_data.size() + minibatchSize - 1) / minibatchSize;
       double batchError = 0;
       VisVType currentVis = train_data[0];
-      std::vector < std::pair<VisVType, HidVType> > cd_data_pos;
-      std::vector < std::pair<VisVType, HidVType> > cd_data_neg;
+      std::vector < std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > cd_data_pos;
+      std::vector < std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVType, HidVType> > > cd_data_neg;
+      //std::vector < std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVtype, HidVtype> > > cd_data_pos;
+      //std::vector < std::pair<VisVType, HidVType>, Eigen::aligned_allocator< std::pair<VisVtype, HidVtype> > > cd_data_neg;
       //cd_data.resize(minibatchSize);
       for (int b = 0; b < numMinibatches; b++)
         {

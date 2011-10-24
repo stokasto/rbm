@@ -3,6 +3,7 @@
 #include <fstream>
 #include <vector>
 #include <Eigen/Core>
+#include <Eigen/StdVector>
 
 using std::ifstream;
 using std::ofstream;
@@ -20,7 +21,7 @@ main(void)
   int size = 8;
   ifstream data_in;
   
-  std::vector< GRBM<8,6>::VisVType > traindata;
+  std::vector< GRBM<8,6>::VisVType, Eigen::aligned_allocator<GRBM<8,6>::VisVType> > traindata;
   for ( int i = 0; i < size; i++ ) 
     {
     GRBM<8,6>::VisVType tmp;
