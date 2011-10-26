@@ -23,14 +23,17 @@ namespace rbm
       // if this is the case we need to scale the input data appropriately
       if (isVisStdevLearned)
         {
-          visibleProb *= (1. / visStdev);
+          visibleProb.array() /= visStdevs.array();// *= (1. / visStdev);
         }
       // compute activation
       hiddenProb = visibleProb.transpose() * weights;
-      if (!isVisibleBinary)
+
+      if (false && !isVisibleBinary)
         {
+          // TODO: what needs to be scaled here ? 
           hiddenProb *= 1. / visStdev;
         }
+     
       hiddenProb += hiddenbias;
       // apply logistic activation
       for (int i = 0; i < hiddenProb.size(); ++i)
@@ -97,6 +100,7 @@ namespace rbm
       // add bias / prior
       visibleProb += visiblebias;
 
+      //std::cout << "vProb: " << std::endl <<  visibleProb.transpose() << std::endl << std::endl;
       // if visible should be binary threshold via logistic activation
       if (isVisibleBinary)
         {
@@ -220,6 +224,8 @@ namespace rbm
       hiddenbiasInc = hiddenbiasInc.array() * momentum + hiddenPos.array() * epsHidBias / numCases
           + hiddenNeg.array() * -epsHidBias / numCases;
 
+      std::cout << "bias " << std::endl
+                << visiblebias << std::endl;
       // update parameters
       weights += weightsInc;
       visiblebias += visiblebiasInc;

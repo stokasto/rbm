@@ -16,7 +16,8 @@ main(void)
 #if 1
   GRBM<8,6> r(4);
   r.setVisibleBinary();
-  r.setBatchSize(1);
+  //r.setStdev(2);
+  r.setBatchSize(10);
   r.setLearningRate(0.1);
   int size = 8;
   ifstream data_in;

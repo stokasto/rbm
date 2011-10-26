@@ -122,7 +122,7 @@ namespace rbm
 
         // init weights randomly
         //g_float low   = -4*sqrt(6./(HID_DIM+VIS_DIM));
-        g_float high = 4 * sqrt(6. / (HID_DIM + VIS_DIM));
+        g_float high = 0.4 * sqrt(6. / (HID_DIM + VIS_DIM));
         for (int i = 0; i < weights.rows(); ++i)
           for (int j = 0; j < weights.cols(); ++j)
             {
@@ -188,6 +188,12 @@ namespace rbm
         epsW = lrate;
         epsVisBias = epsW * 10.;
         epsHidBias = epsW * 10.;
+      }
+      
+      GRBM &
+      setStdev(g_float stdev)
+      {
+        visStdev = stdev;
       }
       
       /*
